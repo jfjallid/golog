@@ -75,13 +75,17 @@ var customLoggers map[string]*MyLogger = make(map[string]*MyLogger)
 
 // Setup a new logger for a given reference.
 // Intended usage is to specify a custom logger for a packet.
-func Set(name string, level, flags int, output io.Writer) {
+func Set(name, displayname string, level, flags int, output io.Writer) {
 	if val, ok := customLoggers[name]; ok {
 		val.level = level
 		val.SetFlags(flags)
 		val.SetOutput(output)
+        if displayname != "" {
+            displayname += " "
+        }
+        val.SetDisplayName(displayname)
 	} else {
-		customLoggers[name] = New(name, level, flags, output)
+		customLoggers[name] = New(displayname, level, flags, output)
 	}
 }
 
@@ -134,6 +138,10 @@ func SetLogLevel(level int) {
 
 func (ml *MyLogger) SetLogLevel(level int) {
 	ml.level = level
+}
+
+func (ml *MyLogger) SetDisplayName(name string) {
+    ml.name = name
 }
 
 func (ml *MyLogger) Debug(v ...interface{}) {
