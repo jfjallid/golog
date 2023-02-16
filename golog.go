@@ -22,6 +22,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 )
 
 // These flags define the available log levels that can be configured. A level
@@ -80,10 +81,10 @@ func Set(name, displayname string, level, flags int, output io.Writer) {
 		val.level = level
 		val.SetFlags(flags)
 		val.SetOutput(output)
-        if displayname != "" {
-            displayname += " "
-        }
-        val.SetDisplayName(displayname)
+		if displayname != "" {
+			displayname += " "
+		}
+		val.SetDisplayName(displayname)
 	} else {
 		customLoggers[name] = New(displayname, level, flags, output)
 	}
@@ -91,10 +92,16 @@ func Set(name, displayname string, level, flags int, output io.Writer) {
 
 // Get a custom logger if it exists, otherwise return default logger.
 func Get(name string) *MyLogger {
+	// If no name is specified return the default logger
+	if name == "" {
+		return std
+	}
 	if val, ok := customLoggers[name]; ok {
 		return val
 	} else {
 		newLogger := New(name, LevelNotice, LstdFlags, DefaultOutput)
+		parts := strings.Split(name, "/")
+		newLogger.SetDisplayName(parts[len(parts)-1] + " ")
 		customLoggers[name] = newLogger
 		return newLogger
 	}
@@ -141,7 +148,7 @@ func (ml *MyLogger) SetLogLevel(level int) {
 }
 
 func (ml *MyLogger) SetDisplayName(name string) {
-    ml.name = name
+	ml.name = name
 }
 
 func (ml *MyLogger) Debug(v ...interface{}) {
