@@ -54,9 +54,10 @@ const (
 
 // These flags define helper values for logging output
 var (
-	DefaultOutput = os.Stdout
-	NoOutput      = io.Discard
-	std           = New("", LevelNotice, LstdFlags, DefaultOutput)
+	DefaultOutput    = os.Stdout
+	DefaultErrOutput = os.Stderr
+	NoOutput         = io.Discard
+	std              = New("", LevelNotice, LstdFlags, DefaultOutput, DefaultErrOutput)
 )
 
 // A MyLogger represents an active logging object that serves as a wrapper
@@ -65,6 +66,7 @@ var (
 // passing it on to the underlying log packets Logger.
 type MyLogger struct {
 	log   *log.Logger
+	elog  *log.Logger
 	level int
 	name  string
 }
@@ -76,17 +78,18 @@ var customLoggers map[string]*MyLogger = make(map[string]*MyLogger)
 
 // Setup a new logger for a given reference.
 // Intended usage is to specify a custom logger for a packet.
-func Set(name, displayname string, level, flags int, output io.Writer) {
+func Set(name, displayname string, level, flags int, output io.Writer, errOutput io.Writer) {
 	if val, ok := customLoggers[name]; ok {
 		val.level = level
 		val.SetFlags(flags)
 		val.SetOutput(output)
+		val.SetErrOutput(errOutput)
 		if displayname != "" {
 			displayname += " "
 		}
 		val.SetDisplayName(displayname)
 	} else {
-		customLoggers[name] = New(displayname, level, flags, output)
+		customLoggers[name] = New(displayname, level, flags, output, errOutput)
 	}
 }
 
@@ -99,7 +102,7 @@ func Get(name string) *MyLogger {
 	if val, ok := customLoggers[name]; ok {
 		return val
 	} else {
-		newLogger := New(name, LevelNotice, LstdFlags, DefaultOutput)
+		newLogger := New(name, LevelNotice, LstdFlags, DefaultOutput, DefaultErrOutput)
 		parts := strings.Split(name, "/")
 		newLogger.SetDisplayName(parts[len(parts)-1] + " ")
 		customLoggers[name] = newLogger
@@ -111,13 +114,14 @@ func Get(name string) *MyLogger {
 // be used to filter what is logged. The flags variable is passed directly to
 // the underlying log package to set Logger flags. The output variable sets the
 // destination to which log data will be written.
-func New(name string, level, flags int, output io.Writer) *MyLogger {
+func New(name string, level, flags int, output io.Writer, errOutput io.Writer) *MyLogger {
 	// Hack to avoid extra space when not using a custom name
 	if name != "" {
 		name += " "
 	}
 	return &MyLogger{
 		log:   log.New(output, "", flags),
+		elog:  log.New(errOutput, "", flags),
 		level: level,
 		name:  name,
 	}
@@ -135,8 +139,16 @@ func SetOutput(w io.Writer) {
 	std.log.SetOutput(w)
 }
 
+func SetErrOutput(w io.Writer) {
+	std.elog.SetOutput(w)
+}
+
 func (ml *MyLogger) SetOutput(w io.Writer) {
 	ml.log.SetOutput(w)
+}
+
+func (ml *MyLogger) SetErrOutput(w io.Writer) {
+	ml.elog.SetOutput(w)
 }
 
 func SetLogLevel(level int) {
@@ -225,37 +237,37 @@ func (ml *MyLogger) Warningf(format string, v ...interface{}) {
 
 func (ml *MyLogger) Error(v ...interface{}) {
 	if ml.level >= LevelError {
-		ml.log.Output(2, fmt.Sprintf(ml.name+"[Error] %v", v...))
+		ml.elog.Output(2, fmt.Sprintf(ml.name+"[Error] %v", v...))
 	}
 }
 
 func (ml *MyLogger) Errorln(v ...interface{}) {
 	if ml.level >= LevelError {
-		ml.log.Output(2, fmt.Sprintf(ml.name+"[Error] %v", v...))
+		ml.elog.Output(2, fmt.Sprintf(ml.name+"[Error] %v", v...))
 	}
 }
 
 func (ml *MyLogger) Errorf(format string, v ...interface{}) {
 	if ml.level >= LevelError {
-		ml.log.Output(2, fmt.Sprintf(ml.name+"[Error] "+format, v...))
+		ml.elog.Output(2, fmt.Sprintf(ml.name+"[Error] "+format, v...))
 	}
 }
 
 func (ml *MyLogger) Critical(v ...interface{}) {
 	if ml.level >= LevelCritical {
-		ml.log.Output(2, fmt.Sprintf(ml.name+"[Critical] %v", v...))
+		ml.elog.Output(2, fmt.Sprintf(ml.name+"[Critical] %v", v...))
 	}
 }
 
 func (ml *MyLogger) Criticalln(v ...interface{}) {
 	if ml.level >= LevelCritical {
-		ml.log.Output(2, fmt.Sprintf(ml.name+"[Critical] %v", v...))
+		ml.elog.Output(2, fmt.Sprintf(ml.name+"[Critical] %v", v...))
 	}
 }
 
 func (ml *MyLogger) Criticalf(format string, v ...interface{}) {
 	if ml.level >= LevelCritical {
-		ml.log.Output(2, fmt.Sprintf(ml.name+"[Critical] "+format, v...))
+		ml.elog.Output(2, fmt.Sprintf(ml.name+"[Critical] "+format, v...))
 	}
 }
 
@@ -333,36 +345,36 @@ func Warningf(format string, v ...interface{}) {
 
 func Error(v ...interface{}) {
 	if std.level >= LevelError {
-		std.log.Output(2, fmt.Sprintf("[Error] %v", v...))
+		std.elog.Output(2, fmt.Sprintf("[Error] %v", v...))
 	}
 }
 
 func Errorln(v ...interface{}) {
 	if std.level >= LevelError {
-		std.log.Output(2, fmt.Sprintf("[Error] %v", v...))
+		std.elog.Output(2, fmt.Sprintf("[Error] %v", v...))
 	}
 }
 
 func Errorf(format string, v ...interface{}) {
 	if std.level >= LevelError {
-		std.log.Output(2, fmt.Sprintf("[Error] "+format, v...))
+		std.elog.Output(2, fmt.Sprintf("[Error] "+format, v...))
 	}
 }
 
 func Critical(v ...interface{}) {
 	if std.level >= LevelCritical {
-		std.log.Output(2, fmt.Sprintf("[Critical] %v", v...))
+		std.elog.Output(2, fmt.Sprintf("[Critical] %v", v...))
 	}
 }
 
 func Criticalln(v ...interface{}) {
 	if std.level >= LevelCritical {
-		std.log.Output(2, fmt.Sprintf("[Critical] %v", v...))
+		std.elog.Output(2, fmt.Sprintf("[Critical] %v", v...))
 	}
 }
 
 func Criticalf(format string, v ...interface{}) {
 	if std.level >= LevelCritical {
-		std.log.Output(2, fmt.Sprintf("[Critical] "+format, v...))
+		std.elog.Output(2, fmt.Sprintf("[Critical] "+format, v...))
 	}
 }
