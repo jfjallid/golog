@@ -129,10 +129,12 @@ func New(name string, level, flags int, output io.Writer, errOutput io.Writer) *
 
 func SetFlags(flag int) {
 	std.log.SetFlags(flag)
+	std.elog.SetFlags(flag)
 }
 
 func (ml *MyLogger) SetFlags(flag int) {
 	ml.log.SetFlags(flag)
+	ml.elog.SetFlags(flag)
 }
 
 func SetOutput(w io.Writer) {
