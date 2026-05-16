@@ -83,9 +83,16 @@ var (
 
 // Setup a new logger for a given reference.
 // Intended usage is to specify a custom logger for a packet.
-func Set(name, displayname string, level, flags int, output io.Writer, errOutput io.Writer) {
+func Set(name, displayname string, level, flags int, output, errOutput io.Writer) {
 	customLoggersMu.Lock()
 	defer customLoggersMu.Unlock()
+	if output == nil {
+		output = DefaultOutput
+	}
+	if errOutput == nil {
+		errOutput = DefaultErrOutput
+	}
+
 	if val, ok := customLoggers[name]; ok {
 		val.level = level
 		val.SetFlags(flags)
@@ -124,6 +131,33 @@ func Get(name string) *MyLogger {
 	newLogger.SetDisplayName(parts[len(parts)-1] + " ")
 	customLoggers[name] = newLogger
 	return newLogger
+}
+
+func Names() []string {
+	customLoggersMu.RLock()
+	defer customLoggersMu.RUnlock()
+	names := make([]string, 0, len(customLoggers))
+	for l := range customLoggers {
+		names = append(names, l)
+	}
+	return names
+}
+
+func SetAll(level, flags int, output, errOutput io.Writer) {
+	customLoggersMu.Lock()
+	defer customLoggersMu.Unlock()
+	for _, lg := range customLoggers {
+		if output == nil {
+			output = DefaultOutput
+		}
+		if errOutput == nil {
+			errOutput = DefaultErrOutput
+		}
+		lg.level = level
+		lg.SetFlags(flags)
+		lg.SetOutput(output)
+		lg.SetErrOutput(errOutput)
+	}
 }
 
 // For scenarios when we just want to export the underlying logger.
