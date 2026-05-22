@@ -8,15 +8,16 @@ implement logging levels:
   - Notice
   - Info
   - Debug
+  - Trace
 
 Where a configured level of Error would only print messages of type Error and
-Critical, while a level of Debug would print all log messages.
+Critical, while a level of Trace would print all log messages.
 
 The package defines a type MyLogger, with methods for formatting output, same
 as the log package, and it also has a predefined 'standard' logger with
 associated logging functions that can be used without creating a custom logger.
 This standard logger has a predefined loglevel of Notice which means that any
-logs created by Info or Debug functions will be discarded.
+logs created by Info, Debug, or Trace functions will be discarded.
 However, note that the standard logger's settings including loglevel can be
 updated with the Set functions same as the custom loggers.
 

@@ -86,22 +86,20 @@ var (
 func Set(name, displayname string, level, flags int, output, errOutput io.Writer) {
 	customLoggersMu.Lock()
 	defer customLoggersMu.Unlock()
-	if output == nil {
-		output = DefaultOutput
-	}
-	if errOutput == nil {
-		errOutput = DefaultErrOutput
-	}
-
 	if val, ok := customLoggers[name]; ok {
 		val.level = level
-		val.SetFlags(flags)
-		val.SetOutput(output)
-		val.SetErrOutput(errOutput)
-		if displayname != "" {
-			displayname += " "
+		if flags > 0 {
+			val.SetFlags(flags)
 		}
-		val.SetDisplayName(displayname)
+		if output != nil {
+			val.SetOutput(output)
+		}
+		if errOutput != nil {
+			val.SetErrOutput(errOutput)
+		}
+		if displayname != "" {
+			val.SetDisplayName(displayname)
+		}
 	} else {
 		customLoggers[name] = New(displayname, level, flags, output, errOutput)
 	}
@@ -196,9 +194,10 @@ func Flags() int {
 	return std.log.Flags()
 }
 
-func (ml *MyLogger) SetFlags(flag int) {
+func (ml *MyLogger) SetFlags(flag int) *MyLogger {
 	ml.log.SetFlags(flag)
 	ml.elog.SetFlags(flag)
+	return ml
 }
 
 func (ml *MyLogger) Flags() int {
@@ -217,12 +216,14 @@ func SetErrOutput(w io.Writer) {
 	std.elog.SetOutput(w)
 }
 
-func (ml *MyLogger) SetOutput(w io.Writer) {
+func (ml *MyLogger) SetOutput(w io.Writer) *MyLogger {
 	ml.log.SetOutput(w)
+	return ml
 }
 
-func (ml *MyLogger) SetErrOutput(w io.Writer) {
+func (ml *MyLogger) SetErrOutput(w io.Writer) *MyLogger {
 	ml.elog.SetOutput(w)
+	return ml
 }
 
 func (ml *MyLogger) Writer() io.Writer {
@@ -233,16 +234,22 @@ func SetLogLevel(level int) {
 	std.level = level
 }
 
-func (ml *MyLogger) SetLogLevel(level int) {
+func (ml *MyLogger) SetLogLevel(level int) *MyLogger {
 	ml.level = level
+	return ml
 }
 
-func (ml *MyLogger) SetDisplayName(name string) {
+func (ml *MyLogger) SetDisplayName(name string) *MyLogger {
+	if !strings.HasSuffix(name, " ") {
+		name += " "
+	}
 	ml.name = name
+	return ml
 }
 
-func (ml *MyLogger) SetPrefix(prefix string) {
+func (ml *MyLogger) SetPrefix(prefix string) *MyLogger {
 	ml.log.SetPrefix(prefix)
+	return ml
 }
 
 func (ml *MyLogger) Prefix() string {
